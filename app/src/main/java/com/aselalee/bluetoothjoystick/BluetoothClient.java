@@ -10,6 +10,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.UUID;
 
 public class BluetoothClient extends Thread{
@@ -102,10 +103,16 @@ public class BluetoothClient extends Thread{
             try {
                 // Read from the InputStream.
                 numBytes = mmInStream.read(mmBuffer);
+                Log.i(LOG_TAG, "Num bytes read: " + Integer.toString(numBytes));
+                String msgStr = new String(mmBuffer, 0, numBytes);
+                Log.i(LOG_TAG, "Bytes as string: " + msgStr);
+                for(int idx = 0; idx < numBytes; idx++) {
+                    Log.i(LOG_TAG, "Byte " + Integer.toString(idx) + ": " + Byte.toString(mmBuffer[idx]));
+                }
                 // Send the obtained bytes to the UI activity.
                 Message readMsg = mHandler.obtainMessage(
-                        MessageConstants.MESSAGE_READ, numBytes, -1,
-                        mmBuffer);
+                        MessageConstants.MESSAGE_READ, numBytes, 0,
+                        msgStr);
                 readMsg.sendToTarget();
             } catch (IOException e) {
                 Log.d(LOG_TAG, "Input stream was disconnected.", e);
@@ -115,10 +122,9 @@ public class BluetoothClient extends Thread{
             }
         }
         Log.d(LOG_TAG, "Thread interrupted.");
-        DisconnectSocket();
     }
 
-    private void DisconnectSocket() {
+    public void DisconnectSocket() {
         try {
             mmSocket.close();
         } catch (IOException e) {
@@ -129,7 +135,7 @@ public class BluetoothClient extends Thread{
     // Call this from the main activity to send data to the remote device.
     public void Write(byte[] bytes) {
         try {
-            mmOutStream.write(bytes);
+            mmOutStream.write(new byte['F']);
             Message writtenMsg = mHandler.obtainMessage(MessageConstants.MESSAGE_WRITTEN);
             writtenMsg.sendToTarget();
         } catch (IOException e) {

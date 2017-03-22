@@ -63,8 +63,8 @@ public class JoyStickClass {
 	}
 	
 	public void drawStick(MotionEvent arg1) {
-		Log.i("BTJS", "X: " + Float.toString(arg1.getX()));
-		Log.i("BTJS", "Y: " + Float.toString(arg1.getY()));
+		//Log.i("BTJS", "X: " + Float.toString(arg1.getX()));
+		//Log.i("BTJS", "Y: " + Float.toString(arg1.getY()));
 
 		position_x = (int) (arg1.getX() - (params.width / 2));
 		position_y = (int) (arg1.getY() - (params.height / 2));

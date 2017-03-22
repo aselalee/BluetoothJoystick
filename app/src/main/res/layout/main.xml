@@ -12,38 +12,33 @@
         android:layout_margin="10dp"
         android:orientation="vertical" >
         <TextView
-            android:id="@+id/textView1"
+            android:id="@+id/received_txt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="X"
+            android:text=""
+            android:maxLines="4"
+            android:lines="4"
             android:textColor="#444444"
             android:textSize="10dp" />
         <TextView
-            android:id="@+id/textView2"
+            android:id="@+id/device_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Y"
+            android:text=""
             android:textColor="#444444"
             android:textSize="10dp" />
         <TextView
-            android:id="@+id/textView3"
+            android:id="@+id/direction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Angle"
+            android:text="Direction: "
             android:textColor="#444444"
             android:textSize="10dp" />
         <TextView
-            android:id="@+id/textView4"
+            android:id="@+id/speed_step"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Distance"
-            android:textColor="#444444"
-            android:textSize="10dp" />
-        <TextView
-            android:id="@+id/textView5"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Direction"
+            android:text="Speed: "
             android:textColor="#444444"
             android:textSize="10dp" />
     </LinearLayout>
