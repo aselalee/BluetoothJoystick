@@ -70,11 +70,11 @@ public class Main extends AppCompatActivity {
                     int dir = mJS.get8Direction();
                     if (mDeviceState == State.STATE_READY && dir != mPrevDireciton) {
                         mPrevDireciton = dir;
-                        if (dir == JoyStickClass.STICK_UP) mBC.Write(new byte['F']);
-                        else if (dir == JoyStickClass.STICK_LEFT) mBC.Write(new byte['L']);
-                        else if (dir == JoyStickClass.STICK_RIGHT) mBC.Write(new byte['R']);
-                        else if (dir == JoyStickClass.STICK_DOWN) mBC.Write(new byte['B']);
-                        else if (dir == JoyStickClass.STICK_NONE) mBC.Write(new byte['S']);
+                        if (dir == JoyStickClass.STICK_UP) mBC.Write(new String("F"));
+                        else if (dir == JoyStickClass.STICK_LEFT) mBC.Write(new String("L"));
+                        else if (dir == JoyStickClass.STICK_RIGHT) mBC.Write(new String("R"));
+                        else if (dir == JoyStickClass.STICK_DOWN) mBC.Write(new String("B"));
+                        else if (dir == JoyStickClass.STICK_NONE) mBC.Write(new String("S"));
                     }
                     mSpeedTxtV.setText("Speed: " + mJS.get6StepDistanceAsString());
                     mDirTxtV.setText("Direction: " + mJS.get8DirectionAsSting());
@@ -122,33 +122,33 @@ public class Main extends AppCompatActivity {
 
                 switch (inputMessage.what) {
                     case MessageConstants.MESSAGE_READ:
-                        Log.d(LOG_TAG, "Message read.");
+                        Log.i(LOG_TAG, "Message read.");
                         String msgStr = null; //(String) inputMessage.obj;
                         if (msgStr != null) {
                             mRcvTxtV.setText(msgStr);
-                            Log.d(LOG_TAG, msgStr);
+                            Log.i(LOG_TAG, msgStr);
                         }
                         break;
                     case MessageConstants.MESSAGE_READ_ERROR:
-                        Log.d(LOG_TAG, "Message read error");
+                        Log.e(LOG_TAG, "Message read error");
                         mDevStatusTxtV.setText("Read Error");
                         mDeviceState = State.STATE_WAIT;
                         break;
                     case MessageConstants.MESSAGE_WRITTEN:
-                        Log.d(LOG_TAG, "Message written.");
+                        Log.i(LOG_TAG, "Message written.");
                         break;
                     case MessageConstants.MESSAGE_WRITE_ERROR:
-                        Log.d(LOG_TAG, "Message write error.");
+                        Log.e(LOG_TAG, "Message write error.");
                         mDevStatusTxtV.setText("Write Error");
                         mDeviceState = State.STATE_WAIT;
                         break;
                     case MessageConstants.MESSAGE_CONNECTED:
-                        Log.d(LOG_TAG, "Connected.");
+                        Log.i(LOG_TAG, "Connected.");
                         mDevStatusTxtV.setText("Connected");
                         mDeviceState = State.STATE_READY;
                         break;
                     case MessageConstants.MESSAGE_CONNECTION_ERROR:
-                        Log.d(LOG_TAG, "Connection error.");
+                        Log.e(LOG_TAG, "Connection error.");
                         mDevStatusTxtV.setText("Connection Error");
                         mDeviceState = State.STATE_WAIT;
                         break;

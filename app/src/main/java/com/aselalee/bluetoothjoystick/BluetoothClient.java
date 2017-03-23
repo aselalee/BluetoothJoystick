@@ -103,12 +103,8 @@ public class BluetoothClient extends Thread{
             try {
                 // Read from the InputStream.
                 numBytes = mmInStream.read(mmBuffer);
-                Log.i(LOG_TAG, "Num bytes read: " + Integer.toString(numBytes));
                 String msgStr = new String(mmBuffer, 0, numBytes);
                 Log.i(LOG_TAG, "Bytes as string: " + msgStr);
-                for(int idx = 0; idx < numBytes; idx++) {
-                    Log.i(LOG_TAG, "Byte " + Integer.toString(idx) + ": " + Byte.toString(mmBuffer[idx]));
-                }
                 // Send the obtained bytes to the UI activity.
                 Message readMsg = mHandler.obtainMessage(
                         MessageConstants.MESSAGE_READ, numBytes, 0,
@@ -133,9 +129,9 @@ public class BluetoothClient extends Thread{
     }
 
     // Call this from the main activity to send data to the remote device.
-    public void Write(byte[] bytes) {
+    public void Write(String message) {
         try {
-            mmOutStream.write(new byte['F']);
+            mmOutStream.write(message.getBytes());
             Message writtenMsg = mHandler.obtainMessage(MessageConstants.MESSAGE_WRITTEN);
             writtenMsg.sendToTarget();
         } catch (IOException e) {
