@@ -8,4 +8,5 @@ public interface MessageConstants {
     int MESSAGE_WRITE_ERROR = 3;
     int MESSAGE_CONNECTED = 4;
     int MESSAGE_CONNECTION_ERROR = 5;
+    int MESSAGE_DISCONNECTED = 6;
 }

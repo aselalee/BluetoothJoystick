@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.Set;
@@ -29,6 +30,7 @@ public class Main extends AppCompatActivity {
     private static final String LOG_TAG = "BTJS[MAIN]";
 	RelativeLayout layout_joystick;
 	TextView mRcvTxtV, mDirTxtV, mSpeedTxtV, mDevStatusTxtV;
+    ScrollView mScrollV;
     Button mConnect, mDisconnect;
 	
 	JoyStickClass  mJS = null;
@@ -36,7 +38,8 @@ public class Main extends AppCompatActivity {
     BluetoothAdapter mBluetoothAdapter = null;
     Handler mHandler;
     BluetoothDevice mDevice;
-    int mPrevDireciton = JoyStickClass.STICK_NONE;
+    int mPrevDirection = JoyStickClass.STICK_NONE;
+    int mPrevSpeed = JoyStickClass.DISTANCE_STEP_0;
     private enum State {
         STATE_READY,
         STATE_WAIT
@@ -51,6 +54,7 @@ public class Main extends AppCompatActivity {
         mDirTxtV = (TextView) findViewById(R.id.direction);
         mSpeedTxtV = (TextView) findViewById(R.id.speed_step);
         mDevStatusTxtV = (TextView) findViewById(R.id.device_status);
+        mScrollV = (ScrollView) findViewById(R.id.scrollView);
 
         layout_joystick = (RelativeLayout) findViewById(R.id.layout_joystick);
 
@@ -68,19 +72,34 @@ public class Main extends AppCompatActivity {
                 if (arg1.getAction() == MotionEvent.ACTION_DOWN
                         || arg1.getAction() == MotionEvent.ACTION_MOVE) {
                     int dir = mJS.get8Direction();
-                    if (mDeviceState == State.STATE_READY && dir != mPrevDireciton) {
-                        mPrevDireciton = dir;
-                        if (dir == JoyStickClass.STICK_UP) mBC.Write(new String("F"));
-                        else if (dir == JoyStickClass.STICK_LEFT) mBC.Write(new String("L"));
-                        else if (dir == JoyStickClass.STICK_RIGHT) mBC.Write(new String("R"));
-                        else if (dir == JoyStickClass.STICK_DOWN) mBC.Write(new String("B"));
-                        else if (dir == JoyStickClass.STICK_NONE) mBC.Write(new String("S"));
+                    int speed = mJS.get6StepDistance();
+                    if (mDeviceState == State.STATE_READY &&
+                            (dir != mPrevDirection || speed != mPrevSpeed)) {
+                        mPrevDirection = dir;
+                        mPrevSpeed = speed;
+                        String msg = new String();
+                        mSpeedTxtV.setText("Speed: " + mJS.get6StepDistanceAsString());
+                        mDirTxtV.setText("Direction: " + mJS.get8DirectionAsSting());
+                        if (dir == JoyStickClass.STICK_UP) msg = "F";
+                        else if (dir == JoyStickClass.STICK_LEFT) msg = "L";
+                        else if (dir == JoyStickClass.STICK_RIGHT) msg = "R";
+                        else if (dir == JoyStickClass.STICK_DOWN) msg = "B";
+                        else if (dir == JoyStickClass.STICK_NONE) msg = "S";
+                        if (!msg.isEmpty()) {
+                            mRcvTxtV.append(">" + msg + "\n");
+                            mScrollV.fullScroll(View.FOCUS_DOWN);
+                            mBC.Write(msg);
+                        }
                     }
-                    mSpeedTxtV.setText("Speed: " + mJS.get6StepDistanceAsString());
-                    mDirTxtV.setText("Direction: " + mJS.get8DirectionAsSting());
                 } else if (arg1.getAction() == MotionEvent.ACTION_UP) {
                     mSpeedTxtV.setText("Speed: ");
                     mDirTxtV.setText("Direction: ");
+                    if (mDeviceState == State.STATE_READY) {
+                        String msg = new String("S");
+                        mRcvTxtV.append(">" + msg + "\n");
+                        mScrollV.fullScroll(View.FOCUS_DOWN);
+                        mBC.Write(msg);
+                    }
                 }
                 return true;
             }
@@ -122,16 +141,16 @@ public class Main extends AppCompatActivity {
 
                 switch (inputMessage.what) {
                     case MessageConstants.MESSAGE_READ:
-                        Log.i(LOG_TAG, "Message read.");
-                        String msgStr = null; //(String) inputMessage.obj;
+                        String msgStr = (String) inputMessage.obj;
                         if (msgStr != null) {
-                            mRcvTxtV.setText(msgStr);
-                            Log.i(LOG_TAG, msgStr);
+                            mRcvTxtV.append(msgStr);
+                            mScrollV.fullScroll(View.FOCUS_DOWN);
+                            Log.i(LOG_TAG, "Message read: " + msgStr);
                         }
                         break;
                     case MessageConstants.MESSAGE_READ_ERROR:
                         Log.e(LOG_TAG, "Message read error");
-                        mDevStatusTxtV.setText("Read Error");
+                        mDevStatusTxtV.setText("Status: Read Error");
                         mDeviceState = State.STATE_WAIT;
                         break;
                     case MessageConstants.MESSAGE_WRITTEN:
@@ -139,17 +158,22 @@ public class Main extends AppCompatActivity {
                         break;
                     case MessageConstants.MESSAGE_WRITE_ERROR:
                         Log.e(LOG_TAG, "Message write error.");
-                        mDevStatusTxtV.setText("Write Error");
+                        mDevStatusTxtV.setText("Status: Write Error");
                         mDeviceState = State.STATE_WAIT;
                         break;
                     case MessageConstants.MESSAGE_CONNECTED:
                         Log.i(LOG_TAG, "Connected.");
-                        mDevStatusTxtV.setText("Connected");
+                        mDevStatusTxtV.setText("Status: Connected");
                         mDeviceState = State.STATE_READY;
                         break;
                     case MessageConstants.MESSAGE_CONNECTION_ERROR:
                         Log.e(LOG_TAG, "Connection error.");
-                        mDevStatusTxtV.setText("Connection Error");
+                        mDevStatusTxtV.setText("Status: Connection Error");
+                        mDeviceState = State.STATE_WAIT;
+                        break;
+                    case MessageConstants.MESSAGE_DISCONNECTED:
+                        Log.i(LOG_TAG, "Disconnected.");
+                        mDevStatusTxtV.setText("Status: Disconnected");
                         mDeviceState = State.STATE_WAIT;
                         break;
                 }
@@ -166,8 +190,8 @@ public class Main extends AppCompatActivity {
                     //Happy days case.
                     Log.i(LOG_TAG, "Bluetooth permission granted.");
                 } else {
-                    Log.i(LOG_TAG, "Bluetooth permission denied.");
                     // permission denied, display message and exit.
+                    Log.i(LOG_TAG, "Bluetooth permission denied.");
                     new AlertDialog.Builder(this)
                             .setMessage("Need bluetooth permission to connect to device.")
                             .setIcon(android.R.drawable.ic_dialog_alert)
