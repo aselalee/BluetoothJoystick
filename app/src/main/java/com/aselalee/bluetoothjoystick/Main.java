@@ -68,36 +68,27 @@ public class Main extends AppCompatActivity {
         layout_joystick.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View arg0, MotionEvent arg1) {
+                String msg;
                 mJS.drawStick(arg1);
-                if (arg1.getAction() == MotionEvent.ACTION_DOWN
-                        || arg1.getAction() == MotionEvent.ACTION_MOVE) {
-                    int dir = mJS.get8Direction();
-                    int speed = mJS.get6StepDistance();
-                    if (mDeviceState == State.STATE_READY &&
-                            (dir != mPrevDirection || speed != mPrevSpeed)) {
-                        mPrevDirection = dir;
-                        mPrevSpeed = speed;
-                        String msg = new String();
+                int dir = mJS.get8Direction();
+                int speed = mJS.get6StepDistance();
+                if (mDeviceState == State.STATE_READY &&
+                        (dir != mPrevDirection || speed != mPrevSpeed)) {
+                    mPrevDirection = dir;
+                    mPrevSpeed = speed;
+                    if (arg1.getAction() == MotionEvent.ACTION_DOWN
+                            || arg1.getAction() == MotionEvent.ACTION_MOVE) {
+
                         mSpeedTxtV.setText("Speed: " + mJS.get6StepDistanceAsString());
                         mDirTxtV.setText("Direction: " + mJS.get8DirectionAsSting());
-                        if (dir == JoyStickClass.STICK_UP) msg = "F";
-                        else if (dir == JoyStickClass.STICK_LEFT) msg = "L";
-                        else if (dir == JoyStickClass.STICK_RIGHT) msg = "R";
-                        else if (dir == JoyStickClass.STICK_DOWN) msg = "B";
-                        else if (dir == JoyStickClass.STICK_NONE) msg = "S";
-                        if (!msg.isEmpty()) {
-                            mRcvTxtV.append(">" + msg + "\n");
-                            mScrollV.fullScroll(View.FOCUS_DOWN);
-                            mBC.Write(msg);
-                        }
-                    }
-                } else if (arg1.getAction() == MotionEvent.ACTION_UP) {
-                    mSpeedTxtV.setText("Speed: ");
-                    mDirTxtV.setText("Direction: ");
-                    if (mDeviceState == State.STATE_READY) {
-                        String msg = new String("S");
-                        mRcvTxtV.append(">" + msg + "\n");
-                        mScrollV.fullScroll(View.FOCUS_DOWN);
+                        msg = mJS.get8DirectionAsCmd();
+                        msg += Integer.toString(speed);
+                        msg += '\n';
+                        mBC.Write(msg);
+                    } else if (arg1.getAction() == MotionEvent.ACTION_UP) {
+                        mSpeedTxtV.setText("Speed: ");
+                        mDirTxtV.setText("Direction: ");
+                        msg = "SS0\n";
                         mBC.Write(msg);
                     }
                 }
@@ -112,8 +103,7 @@ public class Main extends AppCompatActivity {
                     new String[]{Manifest.permission.BLUETOOTH},
                     PERMISSION_REQUEST_ID);
         }
-        else
-        {
+        else {
             Log.i(LOG_TAG, "Bluetooth permission already available.");
         }
         mConnect = (Button)findViewById(R.id.connect);
@@ -138,10 +128,9 @@ public class Main extends AppCompatActivity {
         mHandler = new Handler() {
             @Override
             public void handleMessage(Message inputMessage) {
-
+                String msgStr = (String) inputMessage.obj;
                 switch (inputMessage.what) {
                     case MessageConstants.MESSAGE_READ:
-                        String msgStr = (String) inputMessage.obj;
                         if (msgStr != null) {
                             mRcvTxtV.append(msgStr);
                             mScrollV.fullScroll(View.FOCUS_DOWN);
@@ -154,27 +143,41 @@ public class Main extends AppCompatActivity {
                         mDeviceState = State.STATE_WAIT;
                         break;
                     case MessageConstants.MESSAGE_WRITTEN:
-                        Log.i(LOG_TAG, "Message written.");
+                        if (msgStr != null) {
+                            mRcvTxtV.append(">" + msgStr);
+                            mScrollV.fullScroll(View.FOCUS_DOWN);
+                            Log.i(LOG_TAG, "Message written: " + msgStr);
+                        }
                         break;
                     case MessageConstants.MESSAGE_WRITE_ERROR:
                         Log.e(LOG_TAG, "Message write error.");
                         mDevStatusTxtV.setText("Status: Write Error");
                         mDeviceState = State.STATE_WAIT;
                         break;
+                    case MessageConstants.MESSAGE_CONNECTING:
+                        Log.i(LOG_TAG, "Connecting.");
+                        mDevStatusTxtV.setText("Status: Connecting...");
+                        break;
                     case MessageConstants.MESSAGE_CONNECTED:
                         Log.i(LOG_TAG, "Connected.");
                         mDevStatusTxtV.setText("Status: Connected");
                         mDeviceState = State.STATE_READY;
+                        mConnect.setEnabled(false);
+                        mDisconnect.setEnabled(true);
                         break;
                     case MessageConstants.MESSAGE_CONNECTION_ERROR:
                         Log.e(LOG_TAG, "Connection error.");
                         mDevStatusTxtV.setText("Status: Connection Error");
                         mDeviceState = State.STATE_WAIT;
+                        mConnect.setEnabled(true);
+                        mDisconnect.setEnabled(false);
                         break;
                     case MessageConstants.MESSAGE_DISCONNECTED:
                         Log.i(LOG_TAG, "Disconnected.");
                         mDevStatusTxtV.setText("Status: Disconnected");
                         mDeviceState = State.STATE_WAIT;
+                        mConnect.setEnabled(true);
+                        mDisconnect.setEnabled(false);
                         break;
                 }
             }

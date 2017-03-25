@@ -13,12 +13,12 @@ import java.util.UUID;
 
 public class BluetoothClient extends Thread {
     private static final String LOG_TAG = "BTJS[Client]";
+    private static final int BUFF_SIZE = 8;
     private BluetoothSocket mSocket;
     private BluetoothDevice mDevice;
     private Handler mMainHandler; // Handler from main thread.
     private InputStream mInStream;
     private OutputStream mOutStream;
-    private byte[] mBuffer; // mmBuffer store for the stream.
 
     public BluetoothClient(BluetoothDevice device, Handler handler) {
         mDevice = device;
@@ -26,7 +26,7 @@ public class BluetoothClient extends Thread {
     }
 
 
-    private boolean CreateSocket() {
+    private synchronized boolean CreateSocket() {
         try {
             // Get a BluetoothSocket to connect with the given BluetoothDevice.
             // MY_UUID is the app's UUID string, also used in the server code.
@@ -47,7 +47,7 @@ public class BluetoothClient extends Thread {
         return true;
     }
 
-    private boolean ConnectSocket() {
+    private synchronized boolean ConnectSocket() {
         try {
             // Connect to the remote device through the socket. This call blocks
             // until it succeeds or throws an exception.
@@ -67,17 +67,19 @@ public class BluetoothClient extends Thread {
         return true;
     }
 
-    public void DisconnectSocket() {
-        try {
-            mSocket.close();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "Could not close the client socket", e);
+    public synchronized void DisconnectSocket() {
+        if (mSocket.isConnected()) {
+            try {
+                mSocket.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Could not close the client socket", e);
+            }
         }
         Message msg = mMainHandler.obtainMessage(MessageConstants.MESSAGE_DISCONNECTED);
         msg.sendToTarget();
     }
 
-    private boolean CreateStreams() {
+    private synchronized boolean CreateStreams() {
         try {
             mInStream = mSocket.getInputStream();
         } catch (IOException e) {
@@ -98,25 +100,28 @@ public class BluetoothClient extends Thread {
     }
 
     public void run() {
-        mBuffer = new byte[1024];
+        byte[] buffer = new byte[BUFF_SIZE];
         int numBytes; // bytes returned from read()
+
+        Message msgConnecting = mMainHandler.obtainMessage(MessageConstants.MESSAGE_CONNECTING);
+        msgConnecting.sendToTarget();
         if (CreateSocket() == false || ConnectSocket() == false || CreateStreams() == false) {
             Log.e(LOG_TAG, "Could not connect. Exiting run().");
             return;
         }
-        Message msg = mMainHandler.obtainMessage(MessageConstants.MESSAGE_CONNECTED);
-        msg.sendToTarget();
+        Message msgConnected = mMainHandler.obtainMessage(MessageConstants.MESSAGE_CONNECTED);
+        msgConnected.sendToTarget();
 
         // Keep listening to the InputStream until an exception occurs.
         while (!Thread.interrupted()) {
             try {
                 // Read from the InputStream.
-                numBytes = mInStream.read(mBuffer);
-                String msgStr = new String(mBuffer, 0, numBytes);
-                Log.i(LOG_TAG, "Bytes as string: " + msgStr);
+                numBytes = mInStream.read(buffer, 0, BUFF_SIZE);
+                String msgStr = new String(buffer, 0, numBytes);
+                Log.d(LOG_TAG, "Read from device: " + msgStr + "Number of bytes: " + msgStr.length());
                 // Send the obtained bytes to the UI activity.
                 Message readMsg = mMainHandler.obtainMessage(
-                        MessageConstants.MESSAGE_READ, numBytes, 0,
+                        MessageConstants.MESSAGE_READ, msgStr.length(), 0,
                         msgStr);
                 readMsg.sendToTarget();
             } catch (IOException e) {
@@ -127,13 +132,24 @@ public class BluetoothClient extends Thread {
             }
         }
         Log.d(LOG_TAG, "Thread interrupted.");
+        if (mSocket.isConnected()) {
+            try {
+                mSocket.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Could not close the client socket", e);
+            }
+            Message msgDisconnect = mMainHandler.obtainMessage(MessageConstants.MESSAGE_DISCONNECTED);
+            msgDisconnect.sendToTarget();
+        }
     }
 
-    public void Write(String message) {
+    public synchronized void Write(String message) {
         try {
             mOutStream.write(message.getBytes());
-            Message writtenMsg = mMainHandler.obtainMessage(MessageConstants.MESSAGE_WRITTEN);
-            writtenMsg.sendToTarget();
+            Message readMsg = mMainHandler.obtainMessage(
+                    MessageConstants.MESSAGE_WRITTEN, message.length(), 0,
+                    message);
+            readMsg.sendToTarget();
         } catch (IOException e) {
             Log.e(LOG_TAG, "Error occurred when sending data.", e);
             Message writeErrorMsg = mMainHandler.obtainMessage(MessageConstants.MESSAGE_WRITE_ERROR);

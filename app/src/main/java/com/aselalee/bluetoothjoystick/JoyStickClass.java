@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,9 +27,7 @@ public class JoyStickClass {
 	public static final int DISTANCE_STEP_3 = 3;
 	public static final int DISTANCE_STEP_4 = 4;
 	public static final int DISTANCE_STEP_5 = 5;
-	
-	private int STICK_ALPHA = 200;
-	private int LAYOUT_ALPHA = 200;
+
 	private int OFFSET = 0;
 	
 	private Context mContext;
@@ -63,15 +60,11 @@ public class JoyStickClass {
 	}
 	
 	public void drawStick(MotionEvent arg1) {
-		//Log.i("BTJS", "X: " + Float.toString(arg1.getX()));
-		//Log.i("BTJS", "Y: " + Float.toString(arg1.getY()));
-
 		position_x = (int) (arg1.getX() - (params.width / 2));
 		position_y = (int) (arg1.getY() - (params.height / 2));
 	    distance = (float) Math.sqrt(Math.pow(position_x, 2) + Math.pow(position_y, 2));
 	    angle = (float) cal_angle(position_x, position_y);
-		
-        
+
 		if(arg1.getAction() == MotionEvent.ACTION_DOWN) {
 			if(distance <= (params.width / 2) - OFFSET) {
 				draw.position(arg1.getX(), arg1.getY());
@@ -96,27 +89,6 @@ public class JoyStickClass {
 			mLayout.removeView(draw);
 			touch_state = false;
 		}
-	}
-	
-	public int getX() {
-		if(distance > min_distance && touch_state) {
-			return position_x;
-		}
-		return 0;
-	}
-	
-	public int getY() {
-		if(distance > min_distance && touch_state) {
-			return position_y;
-		}
-		return 0;
-	}
-	
-	public float getAngle() {
-		if(distance > min_distance && touch_state) {
-			return angle;
-		}
-		return 0;
 	}
 	
 	public float getDistance() {
@@ -242,6 +214,43 @@ public class JoyStickClass {
 			case STICK_NONE:
 				str = "Center";
 				break;
+		}
+		return str;
+	}
+
+	public String get8DirectionAsCmd() {
+		int dir = get8Direction();
+		String str = "";
+		switch (dir) {
+			case STICK_UP:
+				str = "UU";
+				break;
+			case STICK_UPRIGHT:
+				str = "UR";
+				break;
+			case STICK_RIGHT:
+				str = "RR";
+				break;
+			case STICK_DOWNRIGHT:
+				str = "DR";
+				break;
+			case STICK_DOWN:
+				str = "DD";
+				break;
+			case STICK_DOWNLEFT:
+				str = "DL";
+				break;
+			case STICK_LEFT:
+				str = "LL";
+				break;
+			case STICK_UPLEFT:
+				str = "UL";
+				break;
+			case STICK_NONE:
+				str = "SS";
+				break;
+			default:
+				str = "SS";
 		}
 		return str;
 	}

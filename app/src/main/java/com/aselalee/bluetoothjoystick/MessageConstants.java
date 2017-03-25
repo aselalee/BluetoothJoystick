@@ -6,7 +6,8 @@ public interface MessageConstants {
     int MESSAGE_READ_ERROR = 1;
     int MESSAGE_WRITTEN= 2;
     int MESSAGE_WRITE_ERROR = 3;
-    int MESSAGE_CONNECTED = 4;
-    int MESSAGE_CONNECTION_ERROR = 5;
-    int MESSAGE_DISCONNECTED = 6;
+    int MESSAGE_CONNECTING = 4;
+    int MESSAGE_CONNECTED = 5;
+    int MESSAGE_CONNECTION_ERROR = 6;
+    int MESSAGE_DISCONNECTED = 7;
 }
